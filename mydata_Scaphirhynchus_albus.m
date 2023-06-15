@@ -264,7 +264,8 @@ metaData.grp.sets = {set1,set2,set3, set4,set5};
 metaData.grp.comment = {comment1,comment2,comment3,comment4,comment5};
 %% Discussion points
 D1 = 'Wwi = 130 kg was ignored, because of inconsistency with Li and LW data; probably includes gonads';
-metaData.discussion = struct('D1', D1); 
+D2 = 'mod_1 : change Wwi to 45e3 as the other number is not trustworthy. Added growth data at three food levels.';
+metaData.discussion = struct('D1', D1, 'D2', D2); 
 
 %% Facts
 F1 = 'The pallid sturgeon is the largest freshwater fish in North America';
