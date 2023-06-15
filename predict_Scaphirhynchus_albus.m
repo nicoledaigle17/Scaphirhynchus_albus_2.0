@@ -12,7 +12,7 @@ function [prdData, info] = predict_Scaphirhynchus_albus(par, data, auxData)
   TC_am = tempcorr(temp.am, T_ref, T_A);
   TC_Ri = tempcorr(temp.Ri, T_ref, T_A);
   TC_tW = tempcorr(temp.tWw, T_ref, T_A);
-  TC_tW1 = tempcorr(temp.tWw_f3, T_ref, T_A); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% changed from f1 to f3 for now
+  TC_tWf3 = tempcorr(temp.tWw_f3, T_ref, T_A); %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% changed from f1 to f3 for now
   
 %   filterChecks = f1 < 0 ; 
 %     
@@ -105,25 +105,56 @@ function [prdData, info] = predict_Scaphirhynchus_albus(par, data, auxData)
 %   ELw_f2  = L/ del_M; % cm, fork length %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
   
   % t-Ww-data for f3 
-  rT_B3 = TC_tW1 * k_M/ 3/ (1 + f3/ g); % 1/d, von Bert growth rate
-  L    = L_i - (L_i - L_b) * exp(- rT_B3 * tWw_f3(:,1)); % cm, structural length
-  EWw_f3  = L.^3 * (1 + f3 * w); % g, wet weight
-  ELw_f3  = L/ del_M; % cm, fork length %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   rT_B3 = TC_tW1 * k_M/ 3/ (1 + f/ g); % 1/d, von Bert growth rate
+%   L    = L_i - (L_i - L_b) * exp(- rT_B3 * tWw_f3(:,1)); % cm, structural length
+%   EWw_f3  = L.^3 * (1 + f * w); % g, wet weight
+%   ELw_f3  = L/ del_M; % cm, fork length %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
  
- %%function to make f3 connect with rearing reserve (~f=0.8)
- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-   
+  vT = v* TC_tWf3; pT_Am = p_Am * TC_tWf3; 
   
+   % f1 no food
+  [tspan , ai, ci] = unique(tWw_f1(:,1)); % unique time values for ode
+  Linit = (Ww0.tWw_f1/ (1 + ome * f)).^(1/3); % cm
+  initial_conditions = [f * E_m; Linit]; % J/cm^3, cm -  reserve density, structural length
+  [t, EL] = ode45(@get_EL,tspan,initial_conditions,[],f1, vT, g, E_m, L_m, pT_Am);
+  L = EL(:,2); % cm, structural length
+  E = EL(:,1) .* L.^3; % J, energy in reserve
+  Ww = E * w_E/ mu_E/ d_E + L.^3; % g, wet weight
+  ELw_f1 = L(ci)/ del_M; % cm, physical length
+  EWw_f1 = Ww(ci); % g, wet weight
+  
+   % f2 medium food
+  [tspan, ai, ci] = unique(tWw_f2(:,1)); % unique time value for ode
+  Linit = (Ww0.tWw_f2/ (1 + ome * f)).^(1/3); % cm
+  initial_conditions = [f * E_m; Linit]; % J/cm^3, cm -  reserve density, structural length
+  [t, EL] = ode45(@get_EL,tspan,initial_conditions,[],f2, vT, g, E_m, L_m, pT_Am);
+  L = EL(:,2); % cm, structural length
+  E = EL(:,1) .* L.^3; % J, energy in reserve
+  Ww = E * w_E/ mu_E/ d_E + L.^3; % g, wet weight
+  ELw_f2 = L(ci)/ del_M; % cm, physical length
+  EWw_f2 = Ww(ci); % g, wet weight
+  
+  % f3 high food
+  [tspan , ai, ci] = unique(tWw_f3(:,1)); % unique time values for ode
+  Linit = (Ww0.tWw_f3/ (1 + ome * f)).^(1/3); % cm
+  initial_conditions = [f * E_m; Linit]; % J/cm^3, cm -  reserve density, structural length
+  [t, EL] = ode45(@get_EL,tspan,initial_conditions,[], f3, vT, g, E_m, L_m, pT_Am);
+  L = EL(:,2); % cm, structural length
+  E = EL(:,1) .* L.^3; % J, energy in reserve
+  Ww = E * w_E/ mu_E/ d_E + L.^3; % g, wet weight
+  ELw_f3 = L(ci)/ del_M; % cm, physical length
+  EWw_f3 = Ww(ci); % g, wet weight
+    
   % pack to output
   prdData.tWw = EWw;
   prdData.tWw_m = EWw_m;
   prdData.tL = ELw;
   prdData.tL_m = ELw_m;
   prdData.LW = ELW;
-%   prdData.tWw_f1 = EWw_f1;
-%   prdData.tL_f1 = ELw_f1; 
-%   prdData.tWw_f2 = EWw_f2;
-%   prdData.tL_f2 = ELw_f2;
+  prdData.tWw_f1 = EWw_f1;
+  prdData.tL_f1 = ELw_f1; 
+  prdData.tWw_f2 = EWw_f2;
+  prdData.tL_f2 = ELw_f2;
   prdData.tWw_f3 = EWw_f3;
   prdData.tL_f3 = ELw_f3;
   %prdData.LW2 = ELW2;
@@ -144,17 +175,22 @@ function [prdData, info] = predict_Scaphirhynchus_albus(par, data, auxData)
 end
 
 %  
-%  function dEL = get_EL(t, EL, tf, v, g, E_m, L_m, p_Am)
-%   E = EL(1); % J/cm^3, reserve density [E}
-%   L = EL(2); % cm, structural length 
-%   %need to tell it that at t-0 to t-365*15 f-0.8, then after f=0.8 
-%   f = spline1(t, tf);                    % -, scaled functional response at t
-%   dE = (f3 * p_Am - E * v)/ L;            % J/d.cm^3, change in reserve density d/dt [E]
-%   e = E/ E_m;                            % -, scaled reserve density
-%   r = v * (e/ L - 1/ L_m)/ (e + g);      % 1/d, specific growth rate
-%   dL = L * r/ 3;                         % cm/d, change in structural length d/dt L
-%   
-%   dEL = [dE; dL]; % catenate for output
-% end  
+ function dEL = get_EL(t, EL, tf, v, g, E_m, L_m, p_Am)
+  E = EL(1); % J/cm^3, reserve density [E}
+  L = EL(2); % cm, structural length 
+
+  if length(tf) > 1
+      f = spline1(t, tf);                    % -, scaled functional response at t
+  else
+      f = tf;
+  end
+  
+  dE = (f * p_Am - E * v)/ L;            % J/d.cm^3, change in reserve density d/dt [E]
+  e = E/ E_m;                            % -, scaled reserve density
+  r = v * (e/ L - 1/ L_m)/ (e + g);      % 1/d, specific growth rate
+  dL = L * r/ 3;                         % cm/d, change in structural length d/dt L
+  
+  dEL = [dE; dL]; % catenate for output
+end  
 
      

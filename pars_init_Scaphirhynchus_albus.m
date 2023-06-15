@@ -28,10 +28,9 @@ par.E_Hpm = 7.939e+05; free.E_Hpm = 1;  units.E_Hpm = 'J';        label.E_Hpm = 
 par.del_M = 0.16662;  free.del_M = 1;   units.del_M = '-';        label.del_M = 'shape coefficient'; 
 par.f = 1;            free.f     = 0;   units.f = '-';            label.f = 'scaled functional response for 0-var data'; 
 par.z_m = 22.7901;    free.z_m   = 1;   units.z_m = '-';          label.z_m = 'zoom factor for males'; 
-%par.f1 = 0.5;         free.f1    = 1;   units.f1 = '-';           label.f1 = 'scaled functional response for f1 data'; 
-%par.f2 = 0.5;         free.f2    = 1;   units.f2 = '-';           label.f2 = 'scaled functional response for f2 data'; 
+par.f1 = 0;         free.f1    = 1;   units.f1 = '-';           label.f1 = 'scaled functional response for f1 data'; 
+par.f2 = 0.5;         free.f2    = 1;   units.f2 = '-';           label.f2 = 'scaled functional response for f2 data'; 
 par.f3 = 1;           free.f3    = 1;   units.f3 = '-';           label.f3 = 'scaled functional response for f3 data'; 
-%par.t_0 = 15 * 365;   free.t_0   = 1;   units.t_0 = 'd';          label.t_0 = 'time after birth'; 
 
 %% set chemical parameters from Kooy2010 
 [par, units, label, free] = addchem(par, units, label, free, metaData.phylum, metaData.class);  
